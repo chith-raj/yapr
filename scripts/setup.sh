@@ -20,9 +20,9 @@ cat <<'MSG'
 Setup complete.
 
 Next:
-1. Install Ollama from https://ollama.com if it is not installed.
-2. Run: ollama pull llama3.2:3b
-3. Start VoiceInk: ./voiceink
+1. Start VoiceInk: ./voiceink
+2. To enable local polishing later, install Ollama and run: ollama pull llama3.2:1b
+3. Switch polishing on with: ./scripts/set-mode.sh polish
 
-macOS will ask for Microphone and Accessibility permissions the first time you use it.
+macOS may ask for Microphone, Accessibility, and Input Monitoring permissions.
 MSG

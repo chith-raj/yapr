@@ -1,40 +1,42 @@
 # VoiceInk
 
-VoiceInk is a lightweight macOS tool that lets you dictate into any focused input field. It records audio on a hotkey, transcribes it locally with Whisper, rewrites it with a local Ollama model when enabled, and pastes the polished result into the active app.
+VoiceInk is a lightweight macOS tool that lets you dictate into any focused input field. It records audio on a hotkey, transcribes it locally with Whisper, optionally rewrites it with a local Ollama model, and pastes the final text into the active app.
 
 ## What It Uses
 
 - `faster-whisper` for local speech-to-text.
-- Ollama for local rewriting.
+- Ollama for optional local rewriting.
 - macOS clipboard + `Cmd+V` to insert text into browser forms, editors, and documents.
 - `pynput` for a configurable global hotkey.
 
-No cloud API is used by the app. The first setup may download Python packages, the Whisper model, and the Ollama model. After those are installed, transcription and rewriting run locally.
+No cloud API is used by the app. The first setup downloads Python packages, and the first transcription may download the selected Whisper model. Ollama is only needed if you enable rewriting.
 
 ## Setup
 
+Requirements:
+
+- macOS.
+- Python 3.9 or newer.
+- Microphone, Accessibility, and Input Monitoring permissions when macOS asks.
+- Ollama only if you enable local rewriting.
+
 ```bash
-cd local-dictation-polisher
+git clone https://github.com/chith-raj/voiceink.git
+cd voiceink
 chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
 
-Regenerate the app icon if needed:
+The default setup uses lightweight transcription only. To install the app launcher into your user Applications folder:
 
 ```bash
-./scripts/generate-icon.py
-```
-
-Install Ollama if needed, then pull a small local model:
-
-```bash
-ollama pull llama3.2:3b
+./scripts/install-app.sh
 ```
 
 ## Run
 
 ```bash
-cd local-dictation-polisher
+cd voiceink
 ./voiceink
 ```
 
@@ -46,7 +48,7 @@ VoiceInk.app
 
 From Finder, you can drag `VoiceInk.app` to the Dock. It runs in the background and uses the same hotkey.
 
-If macOS blocks the app from reading files in `Documents`, install it into your user Applications folder:
+If macOS blocks the app from reading files in a protected folder like `Documents`, install it into your user Applications folder:
 
 ```bash
 ./scripts/install-app.sh
@@ -64,7 +66,7 @@ Default hotkey:
 Command + Shift + D
 ```
 
-Press the hotkey once to start recording. Press it again to stop. The polished text is pasted into the active input field.
+Press the hotkey once to start recording. Press it again to stop. The final text is pasted into the active input field.
 
 For a one-off terminal test:
 
@@ -90,7 +92,7 @@ Useful settings:
   },
   "rewriter": {
     "provider": "none",
-    "model": "llama3.2:3b",
+    "model": "llama3.2:1b",
     "style": "polished, concise, and well structured"
   },
   "paste": {
@@ -128,10 +130,34 @@ To disable rewriting and paste the transcript directly:
 }
 ```
 
+## Local Polishing
+
+VoiceInk starts in lightweight mode by default:
+
+```text
+Whisper: tiny.en
+Rewriting: disabled
+```
+
+To enable local polishing, install Ollama, pull a small local model, and switch modes:
+
+```bash
+ollama pull llama3.2:1b
+./scripts/set-mode.sh polish
+```
+
+To switch back to lightweight transcript-only mode:
+
+```bash
+./scripts/set-mode.sh light
+```
+
+When polishing is enabled, Ollama must be running.
+
 ## Start Automatically On Login
 
 ```bash
-cd local-dictation-polisher
+cd voiceink
 chmod +x scripts/install-launch-agent.sh scripts/uninstall-launch-agent.sh
 ./scripts/install-launch-agent.sh
 ```
@@ -180,5 +206,7 @@ Then allow the terminal app you use. You can verify key events with:
 ## Notes
 
 - Ollama must be running for rewriting. If Ollama is unavailable, set `"provider": "none"` to paste raw transcripts.
+- The default setup is intentionally lightweight for MacBook Air-class machines.
 - The first transcription can take longer while the Whisper model is downloaded and cached.
 - Universal insertion is implemented with clipboard paste because it works across browsers, editors, and document apps.
+- Regenerate the app icon with `./scripts/generate-icon.py` if you edit the icon generator.

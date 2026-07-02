@@ -21,7 +21,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     },
     "rewriter": {
         "provider": "none",
-        "model": "llama3.2:3b",
+        "model": "llama3.2:1b",
         "ollama_url": "http://127.0.0.1:11434/api/generate",
         "timeout_seconds": 90,
         "style": "polished, concise, and well structured",

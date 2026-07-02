@@ -15,10 +15,29 @@ if [[ ! -f "$CONFIG_PATH" ]]; then
   exit 1
 fi
 
+python3 - "$CONFIG_PATH" "$MODE" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config_path = Path(sys.argv[1])
+mode = sys.argv[2]
+config = json.loads(config_path.read_text())
+
+config.setdefault("whisper", {})["model"] = "tiny.en"
+rewriter = config.setdefault("rewriter", {})
+
+if mode == "light":
+    rewriter["provider"] = "none"
+else:
+    rewriter["provider"] = "ollama"
+    rewriter["model"] = "llama3.2:1b"
+
+config_path.write_text(json.dumps(config, indent=2) + "\n")
+PY
+
 if [[ "$MODE" == "light" ]]; then
-  perl -0pi -e 's/"provider"\s*:\s*"[^"]+"/"provider": "none"/; s/"model"\s*:\s*"[^"]+"/"model": "tiny.en"/' "$CONFIG_PATH"
   echo "Mode set to light: tiny.en transcription, no rewriting."
 else
-  perl -0pi -e 's/"provider"\s*:\s*"[^"]+"/"provider": "ollama"/; s/"model"\s*:\s*"llama3\.2:3b"/"model": "llama3.2:1b"/' "$CONFIG_PATH"
   echo "Mode set to polish: tiny.en transcription, Ollama llama3.2:1b rewriting."
 fi
