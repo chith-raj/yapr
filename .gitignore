@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.wav
+*.pid
+VoiceInk.app/Contents/Resources/VoiceInk.iconset/

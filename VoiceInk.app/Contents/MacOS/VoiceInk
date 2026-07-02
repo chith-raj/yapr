@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+INSTALLED_RUNTIME="$HOME/Library/Application Support/VoiceInk/runtime"
+if [[ -f "$INSTALLED_RUNTIME/voiceink" ]]; then
+  PROJECT_DIR="$INSTALLED_RUNTIME"
+else
+  PROJECT_DIR="$(cd "$APP_DIR/.." && pwd)"
+fi
+LOG_DIR="$HOME/Library/Logs/voiceink"
+STATE_DIR="$HOME/Library/Application Support/VoiceInk"
+PID_FILE="$STATE_DIR/voiceink.pid"
+
+mkdir -p "$LOG_DIR" "$STATE_DIR"
+
+if [[ -f "$PID_FILE" ]]; then
+  EXISTING_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+  if [[ "$EXISTING_PID" =~ ^[0-9]+$ ]] && kill -0 "$EXISTING_PID" 2>/dev/null; then
+    exit 0
+  fi
+fi
+
+echo "$$" > "$PID_FILE"
+cd "$PROJECT_DIR"
+
+{
+  echo
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting VoiceInk from app launcher"
+} >> "$LOG_DIR/out.log"
+
+exec "$PROJECT_DIR/.venv/bin/python" -m dictation_polisher.app >> "$LOG_DIR/out.log" 2>> "$LOG_DIR/err.log"
