@@ -1,54 +1,123 @@
 # VoiceInk
 
-VoiceInk is a lightweight macOS tool that lets you dictate into any focused input field. It records audio on a hotkey, transcribes it locally with Whisper, optionally rewrites it with a local Ollama model, and pastes the final text into the active app.
+VoiceInk is a local macOS dictation tool. Press a shortcut, speak naturally, and VoiceInk inserts the transcribed text into the active input field. You can keep it lightweight with local Whisper transcription only, or enable local Ollama rewriting for polished text.
 
-## What It Uses
+```text
+Default shortcut: Command + Shift + D
+```
 
-- `faster-whisper` for local speech-to-text.
-- Ollama for optional local rewriting.
-- macOS clipboard + `Cmd+V` to insert text into browser forms, editors, and documents.
-- `pynput` for a configurable global hotkey.
+## What It Does
 
-No cloud API is used by the app. The first setup downloads Python packages, and the first transcription may download the selected Whisper model. Ollama is only needed if you enable rewriting.
+- Records your voice with a global hotkey.
+- Transcribes locally with `faster-whisper`.
+- Optionally rewrites locally with Ollama.
+- Pastes into the active browser form, editor, chat box, document, or note.
+- Runs without a cloud API.
+- Can run from Terminal or as a macOS app launcher.
 
-## Setup
+## Quick Start
 
-Requirements:
+Follow this path if you are setting up VoiceInk for the first time:
 
-- macOS.
-- Python 3.9 or newer.
-- Microphone, Accessibility, and Input Monitoring permissions when macOS asks.
-- Ollama only if you enable local rewriting.
+```text
+[ ] Clone the repo
+[ ] Run setup
+[ ] Start VoiceInk
+[ ] Approve macOS permissions
+[ ] Press Command + Shift + D inside any text field
+```
+
+### 1. Clone The Repo
 
 ```bash
 git clone https://github.com/chith-raj/voiceink.git
 cd voiceink
+```
+
+### 2. Run Setup
+
+```bash
 chmod +x scripts/setup.sh
 ./scripts/setup.sh
 ```
 
-The default setup uses lightweight transcription only. To install the app launcher into your user Applications folder:
+This creates a Python virtual environment, installs dependencies, and creates:
 
-```bash
-./scripts/install-app.sh
+```text
+~/.dictation-polisher/config.json
 ```
 
-## Run
+### 3. Start VoiceInk
 
 ```bash
-cd voiceink
 ./voiceink
 ```
 
-You can also launch VoiceInk without Terminal by opening:
+You should see:
 
 ```text
-VoiceInk.app
+Listening for hotkey: <cmd>+<shift>+d
 ```
 
-From Finder, you can drag `VoiceInk.app` to the Dock. It runs in the background and uses the same hotkey.
+### 4. Dictate
 
-If macOS blocks the app from reading files in a protected folder like `Documents`, install it into your user Applications folder:
+1. Click any text field.
+2. Press `Command + Shift + D`.
+3. Speak.
+4. Press `Command + Shift + D` again.
+5. VoiceInk transcribes and inserts the final text.
+
+## Choose A Mode
+
+VoiceInk starts in lightweight mode by default.
+
+| Mode | Best For | Local Model Load | Command |
+| --- | --- | --- | --- |
+| Light | Fast transcription while working | Low | `./scripts/set-mode.sh light` |
+| Polish | Cleaner rewritten text | Higher | `./scripts/set-mode.sh polish` |
+
+### Light Mode
+
+Use this when you want minimal system impact.
+
+```bash
+./scripts/set-mode.sh light
+```
+
+Light mode uses:
+
+```text
+Whisper: tiny.en
+Rewriting: disabled
+```
+
+### Polish Mode
+
+Use this when you want VoiceInk to clean up grammar and structure.
+
+First install Ollama from:
+
+```text
+https://ollama.com
+```
+
+Then pull a small local model:
+
+```bash
+ollama pull llama3.2:1b
+```
+
+Enable polishing:
+
+```bash
+./scripts/set-mode.sh polish
+```
+
+When polishing is enabled, Ollama must be running.
+
+## Launch Without Terminal
+
+If you do not want to run `./voiceink` manually every time, install the app launcher:
 
 ```bash
 ./scripts/install-app.sh
@@ -60,29 +129,87 @@ Then open:
 ~/Applications/VoiceInk.app
 ```
 
-Default hotkey:
+You can drag `VoiceInk.app` to the Dock.
 
-```text
-Command + Shift + D
+If macOS blocks the app from reading files in a protected folder like `Documents`, use the installed app from `~/Applications`.
+
+## Start On Login
+
+Install the LaunchAgent:
+
+```bash
+chmod +x scripts/install-launch-agent.sh scripts/uninstall-launch-agent.sh
+./scripts/install-launch-agent.sh
 ```
 
-Press the hotkey once to start recording. Press it again to stop. The final text is pasted into the active input field.
+Remove it later:
 
-For a one-off terminal test:
+```bash
+./scripts/uninstall-launch-agent.sh
+```
+
+Logs are written to:
+
+```text
+~/Library/Logs/voiceink/
+```
+
+## macOS Permissions
+
+VoiceInk needs a few macOS permissions.
+
+| Permission | Why |
+| --- | --- |
+| Microphone | Records dictation |
+| Accessibility | Pastes text into the active app |
+| Input Monitoring | Receives the global hotkey |
+
+Open:
+
+```text
+System Settings -> Privacy & Security
+```
+
+Then check:
+
+```text
+Microphone
+Accessibility
+Input Monitoring
+```
+
+Allow the app you use to launch VoiceInk:
+
+- `Terminal`, `iTerm`, `Warp`, or `Visual Studio Code` if running from Terminal.
+- `VoiceInk` if launching `VoiceInk.app`.
+
+After changing permissions, quit and reopen the app or terminal.
+
+## Test Commands
+
+Record once, stop with Enter, and print output instead of pasting:
 
 ```bash
 ./voiceink --once --print-only
 ```
 
+Check whether macOS is sending key events to VoiceInk:
+
+```bash
+./voiceink --debug-keys
+```
+
+Press a few keys. If nothing prints, check `Input Monitoring`.
+
 ## Customize
 
-Create or edit:
+Edit:
 
 ```text
 ~/.dictation-polisher/config.json
 ```
 
-Useful settings:
+Common settings:
 
 ```json
 {
@@ -118,95 +245,50 @@ small.en
 medium.en
 ```
 
-Smaller models are faster. Larger models are more accurate.
+Smaller Whisper models are faster. Larger models are more accurate.
 
-To disable rewriting and paste the transcript directly:
+## Troubleshooting
 
-```json
-{
-  "rewriter": {
-    "provider": "none"
-  }
-}
+### Hotkey Does Nothing
+
+Run:
+
+```bash
+./voiceink --debug-keys
 ```
 
-## Local Polishing
+If no key events appear, enable `Input Monitoring` for your terminal or `VoiceInk.app`.
 
-VoiceInk starts in lightweight mode by default:
+### Text Does Not Paste
+
+Enable `Accessibility` permission for your terminal or `VoiceInk.app`.
+
+### App Opens But Nothing Is Visible
+
+VoiceInk is a background app. It does not show a window. Click into a text field and press:
 
 ```text
-Whisper: tiny.en
-Rewriting: disabled
+Command + Shift + D
 ```
 
-To enable local polishing, install Ollama, pull a small local model, and switch modes:
+### Polishing Does Not Work
+
+Make sure Ollama is running and the model is installed:
 
 ```bash
 ollama pull llama3.2:1b
 ./scripts/set-mode.sh polish
 ```
 
-To switch back to lightweight transcript-only mode:
+### Switch Back To Lightweight Mode
 
 ```bash
 ./scripts/set-mode.sh light
 ```
 
-When polishing is enabled, Ollama must be running.
-
-## Start Automatically On Login
-
-```bash
-cd voiceink
-chmod +x scripts/install-launch-agent.sh scripts/uninstall-launch-agent.sh
-./scripts/install-launch-agent.sh
-```
-
-Uninstall:
-
-```bash
-./scripts/uninstall-launch-agent.sh
-```
-
-Logs:
-
-```text
-~/Library/Logs/voiceink/
-```
-
-## macOS Permissions
-
-The tool needs:
-
-- Microphone access for recording.
-- Accessibility access so it can trigger `Cmd+V` in the active app.
-
-If pasting does not work, open:
-
-```text
-System Settings -> Privacy & Security -> Accessibility
-```
-
-Then allow the terminal app you use, or the Python executable inside this project.
-
-If you launch `VoiceInk.app`, allow `VoiceInk` in these permission screens when macOS asks.
-
-If the hotkey does not trigger, also check:
-
-```text
-System Settings -> Privacy & Security -> Input Monitoring
-```
-
-Then allow the terminal app you use. You can verify key events with:
-
-```bash
-./voiceink --debug-keys
-```
-
 ## Notes
 
-- Ollama must be running for rewriting. If Ollama is unavailable, set `"provider": "none"` to paste raw transcripts.
+- VoiceInk uses clipboard paste because it works across most macOS apps.
+- The first transcription can take longer while Whisper downloads and caches the model.
 - The default setup is intentionally lightweight for MacBook Air-class machines.
-- The first transcription can take longer while the Whisper model is downloaded and cached.
-- Universal insertion is implemented with clipboard paste because it works across browsers, editors, and document apps.
 - Regenerate the app icon with `./scripts/generate-icon.py` if you edit the icon generator.
