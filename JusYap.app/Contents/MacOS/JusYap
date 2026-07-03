@@ -29,4 +29,18 @@ cd "$PROJECT_DIR"
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting JusYap from app launcher"
 } >> "$LOG_DIR/out.log"
 
-exec "$PROJECT_DIR/.venv/bin/python" -m dictation_polisher.app >> "$LOG_DIR/out.log" 2>> "$LOG_DIR/err.log"
+set +e
+PYTHONUNBUFFERED=1 arch -arm64 "$PROJECT_DIR/.venv/bin/python" -m dictation_polisher.app >> "$LOG_DIR/out.log" 2>> "$LOG_DIR/err.log" &
+CHILD_PID=$!
+
+cleanup() {
+  kill "$CHILD_PID" 2>/dev/null || true
+  rm -f "$PID_FILE"
+}
+
+trap cleanup INT TERM EXIT
+wait "$CHILD_PID"
+STATUS=$?
+trap - INT TERM EXIT
+rm -f "$PID_FILE"
+exit "$STATUS"
